@@ -1,14 +1,11 @@
+Final V5.0 600 QUESTIONS / Multp Options
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SCCJA Practice Exam — 600 Questions</title>
-<!-- PWA Manifest & iOS Support -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = {
@@ -114,7 +111,7 @@
             Prepare for the South Carolina Criminal Justice Academy examination with this comprehensive 600-question practice test bank covering Traffic Statutes, Use of Force, Collision Investigation, Active Shooter response, and more.
         </p>
 
-        <!-- Stats Grid -->
+        <!-- Stats Grid (Reduced to 2 boxes as requested) -->
         <div class="grid grid-cols-2 gap-3 my-8 text-left max-w-xl mx-auto">
             <div class="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                 <div class="text-blue-400 text-2xl font-black" id="statQuestionCount">600</div>
@@ -317,15 +314,16 @@
 </div>
 
 <script>
-// --- PWA SERVICE WORKER REGISTRATION ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Offline Service Worker Registered!', reg.scope))
-      .catch(err => console.error('Service Worker Registration Failed:', err));
-  });
+// --- CATEGORY NORMALIZATION MAPPING ---
+function normalizeCategory(cat) {
+    if (!cat) return "General Study";
+    const c = cat.trim();
+    if (/^traffic\s*(statutes|law|enforcement)?$/i.test(c)) return "Traffic Statutes & Enforcement";
+    if (/^use\s*of\s*force$/i.test(c)) return "Use of Force";
+    // ... (delete all of these regex rules) ...
+    if (/firearms/i.test(c) || /range\s*safety/i.test(c)) return "Firearms & Range Safety";
+    return c;
 }
-
 // --- CORE QUESTION BANK ---
 const rawQuestions = [
   { cat: "Traffic Statutes", q: "Under SC Code 56-5-1520, which type of collision is typically associated with driving 'Too fast for conditions'?", q_o: ["Angular impact", "Rear impact", "Side impact", "Sideswipe"], correct: "Rear impact" },
@@ -857,6 +855,7 @@ const rawQuestions = [
 // --- CATEGORY NORMALIZATION MAPPING ---
 function normalizeCategory(cat) {
     if (!cat) return "General Study";
+    // This simply cleans up any accidental spaces but keeps YOUR exact wording intact.
     return cat.trim(); 
 }
 
@@ -888,7 +887,6 @@ function getOrGenerateExplanation(q) {
       return `According to South Carolina Criminal Justice Academy curriculum standards, '${correct}' is the correct answer and represents best practice for law enforcement professionals.`;
   }
 }
-
 // --- BUILD THE 600-QUESTION BANK ---
 function buildFull600QuestionBank() {
   const targetCount = 600;
@@ -916,7 +914,8 @@ function buildFull600QuestionBank() {
     unique.push({
       cat: normalizedCat,
       q: original.q,
-      q_o: [...original.q_o],
+      // FIX: Force random shuffle on the answer options A, B, C, D
+      q_o: shuffleArray([...original.q_o]), 
       correct: original.correct,
       exp: getOrGenerateExplanation({ ...original, cat: normalizedCat })
     });
@@ -935,7 +934,8 @@ function buildFull600QuestionBank() {
     bank.push({
       cat: normalizedCat,
       q: `Review Study Variation ${variationNumber}: ${source.q}`,
-      q_o: [...source.q_o],
+      // FIX: Force random shuffle on the duplicate variations as well
+      q_o: shuffleArray([...source.q_o]), 
       correct: source.correct,
       exp: `Review Variation: ${getOrGenerateExplanation(source)}`
     });
@@ -944,7 +944,6 @@ function buildFull600QuestionBank() {
 
   return bank.slice(0, targetCount);
 }
-
 // Global Exam State
 const EXAM_STATE_KEY = "sccja_exam_state_v4";
 const EXAM_HISTORY_KEY = "sccja_exam_history_v1";
@@ -1043,7 +1042,9 @@ function beginExam() {
   autoAdvanceTimer = null;
   localStorage.removeItem(EXAM_STATE_KEY);
 
-  if (mode === "quick50") {
+ if (mode === "full") {
+    activeQuestions = shuffleArray(questionBank).slice(0, Math.min(600, questionBank.length));
+  } else if (mode === "quick50") {
     activeQuestions = shuffleArray(questionBank).slice(0, Math.min(50, questionBank.length));
   } else if (mode === "quick100") {
     activeQuestions = shuffleArray(questionBank).slice(0, Math.min(100, questionBank.length));
@@ -1053,6 +1054,7 @@ function beginExam() {
   } else {
     activeQuestions = [...questionBank];
   }
+
 
   if (!activeQuestions.length) {
     alert("No questions are available for this exam selection.");
